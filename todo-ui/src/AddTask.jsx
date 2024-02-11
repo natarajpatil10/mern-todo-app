@@ -1,21 +1,31 @@
-import { useEffect, useState, useRef } from 'react';
-import { BsPlus } from 'react-icons/bs';
-import TaskList from './TaskList';
+import { useEffect, useReducer, useRef } from 'react';
 import axios from 'axios';
+import { BsPlus } from 'react-icons/bs';
 import { MdDone } from 'react-icons/md';
+import TaskList from './TaskList';
+
+const initialState = {
+    typedTask: '',
+    displayTask: [],
+    isEdited: false,
+};
+
+const stateReducer = (currentState, newState) => {
+    return { ...currentState, ...newState };
+};
 
 const AddTask = () => {
-    const [typedTask, setTypedTask] = useState({ text: '', id: '' });
-    const [displayTask, setDisplayTask] = useState([]);
-    const [isEdited, setIsEdited] = useState(false);
+    const [state, dispatch] = useReducer(stateReducer, initialState);
 
     const inputRef = useRef(null);
+    const prevTaskRef = useRef(null);
+    const { typedTask, displayTask, isEdited } = state;
 
     useEffect(() => {
         axios
             .get('http://127.0.0.1:5000/get-tasks')
             .then(res => {
-                setDisplayTask(res.data);
+                dispatch({ displayTask: res.data });
             })
             .catch(err => {
                 console.log(err);
@@ -23,14 +33,14 @@ const AddTask = () => {
     }, []);
 
     const changeHandler = e => {
-        setTypedTask({ text: e.target.value, id: typedTask.id });
+        dispatch({ typedTask: { text: e.target.value, id: typedTask.id } });
     };
 
     const clickHandler = e => {
         e.preventDefault();
         inputRef.current.focus();
 
-        if (!typedTask.text.trim()) return alert('Please add a task');
+        if (!typedTask.text?.trim()) return alert('Please add a task');
 
         if (!isEdited) {
             if (typedTask.text.trim()) {
@@ -40,19 +50,22 @@ const AddTask = () => {
                     .catch(err => console.error(err));
             }
         } else {
-            axios
-                .put('http://127.0.0.1:5000/update/' + typedTask.id, { task: typedTask.text })
-                .then(() => location.reload())
-                .catch(err => console.error(err));
+            if (prevTaskRef.current !== typedTask.text) {
+                axios
+                    .put('http://127.0.0.1:5000/update/' + typedTask.id, { task: typedTask.text })
+                    .then(() => location.reload())
+                    .catch(err => console.error(err));
+                dispatch({ isEdited: false });
+            }
         }
-        setTypedTask('');
-        setIsEdited(false);
+        dispatch({ typedTask: '' });
     };
 
     const handleEdit = (task, id) => {
-        setTypedTask({ text: task, id });
+        prevTaskRef.current = task;
+        dispatch({ typedTask: { text: task, id } });
         inputRef.current.focus();
-        setIsEdited(true);
+        dispatch({ isEdited: true });
     };
 
     const handleDelete = id => {
@@ -66,7 +79,7 @@ const AddTask = () => {
         <>
             <header>
                 <div className='input-container'>
-                    <input ref={inputRef} type='text' onChange={changeHandler} value={typedTask.text} placeholder='Add a task..' autoFocus />
+                    <input ref={inputRef} type='text' onChange={changeHandler} value={typedTask?.text || ''} placeholder='Add a task..' autoFocus />
                     <button id='addBtn' onClick={clickHandler}>
                         {!isEdited ? <BsPlus fontSize='x-large' /> : <MdDone fontSize='x-large' />}
                     </button>

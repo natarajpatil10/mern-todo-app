@@ -1,28 +1,27 @@
 import { MdDelete } from 'react-icons/md';
-import { IoIosCheckmarkCircleOutline } from 'react-icons/io';
+import { CiEdit } from 'react-icons/ci';
 
 // eslint-disable-next-line react/prop-types
-const TaskList = ({ handleDelete, _id, handleDone, task }) => {
+const TaskList = ({ handleDelete, id, handleEdit, task }) => {
     return (
         <ul>
             <li>
                 {task}
 
                 <div className='btn-container'>
+                    <CiEdit
+                        onClick={() => {
+                            handleEdit(task, id);
+                        }}
+                        fontSize='large'
+                        className='edit-btn'
+                    />
                     <MdDelete
                         onClick={() => {
-                            handleDelete(_id);
+                            handleDelete(id);
                         }}
                         fontSize='x-large'
                         className='delete-btn'
-                    />
-
-                    <IoIosCheckmarkCircleOutline
-                        onClick={() => {
-                            handleDone(_id);
-                        }}
-                        fontSize='x-large'
-                        className='done-btn'
                     />
                 </div>
             </li>
